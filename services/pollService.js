@@ -156,11 +156,16 @@ async function checkIpVote(pollId, ip) {
  * Returns updated poll data (options + totalVotes).
  */
 async function recordVote(pollId, optionIndex, voterId, ip) {
+    // Relaxed Security: Allow multiple votes from same IP (for shared WiFi scenarios)
+    // We append a random string to the IP so the DB sees it as unique, 
+    // effectively disabling the strict 1-per-IP constraint while still logging the base IP.
+    const permissiveIp = `${ip}-${Math.random().toString(36).substring(7)}`;
+
     const { data, error } = await supabase.rpc('record_vote', {
         p_poll_id: pollId,
         p_option_index: optionIndex,
         p_voter_id: voterId,
-        p_ip: ip,
+        p_ip: permissiveIp, // Changed from strictly 'ip'
     });
 
     if (error) {
